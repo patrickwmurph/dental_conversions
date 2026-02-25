@@ -36,15 +36,14 @@ def map_surfaces(
     anatomy = df[anatomy_column].astype(str).str.strip()
     surfaces = df[surfaces_column].astype(str).str.strip()
 
-    # Start by preserving original values
     df["Surfaces_Mapped"] = surfaces
 
-    # ---- Anterior ----
+    # Anterior
     mask_anterior = anatomy.isin(anterior_anatomy_vel)
     mapped_anterior = surfaces.map(surface_anterior_map).fillna(surfaces)
     df.loc[mask_anterior, "Surfaces_Mapped"] = mapped_anterior[mask_anterior]
 
-    # ---- Posterior ----
+    # Posterior
     mask_posterior = anatomy.isin(posterior_anatomy_vel)
     mapped_posterior = surfaces.map(surface_posterior_map).fillna(surfaces)
     df.loc[mask_posterior, "Surfaces_Mapped"] = mapped_posterior[mask_posterior]
@@ -66,7 +65,7 @@ def map_provider(
     
     df[target_column] = (
         mapped
-            .replace("", pd.NA)   # treat empty dictionary values as NA
+            .replace("", pd.NA)
             .fillna(default_value)
     )
     
