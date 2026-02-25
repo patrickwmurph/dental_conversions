@@ -1,5 +1,3 @@
-import pandas as pd
-
 procedure_map = {
     "PUD1": "WIS35",
     "PUD2": "WIS36",
@@ -152,6 +150,7 @@ teeth_map = {
     "99": "94299"
 }
 
+# Area of Oral Cavity Arch/Quad mapping
 arch_map = {
     "UA": 1,
     "LA": 2
@@ -162,4 +161,164 @@ quad_map = {
     "UL": 20,
     "LL": 30,
     "LR": 40
+}
+
+
+# Posterior/Anterior Surfaces
+surface_anterior_map = {
+    "B": 0,
+    "L": 1,
+    "M": 2,
+    "D": 3,
+    "O": 4,
+    "F5": 7,
+    "L5": 8,
+    "B5": 9
+}
+
+surface_posterior_map = {
+    "F": 6,
+    "L": 1,
+    "M": 2,
+    "D": 3,
+    "I": 5,
+    "F5": 7,
+    "L5": 8,
+    "B5": 9
+}
+
+posterior_anatomy_vel = [
+    "A", "B", "J", "K", "L", "S", "T",
+    "1", "2", "3", "4", "5",
+    "12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
+    "28", "29", "30", "31", "32"
+]
+
+anterior_anatomy_vel = [
+    "C", "D", "E", "F", "G", "H", "I",
+    "M", "N", "O", "P", "Q", "R",
+    "6", "7", "8", "9", "10", "11",
+    "22", "23", "24", "25", "26", "27"
+]
+
+provider_emp_map = {
+    "GNEPSTEIN": "",
+    "OOEPSTEIN": "",
+    "YPKHOU": "",
+    "DORABDYAN": "92188",
+    "GNABDYAN": "92188",
+    "PEDSBROF": "74415",
+    "FPPFAN": "53361",
+    "GCFAN": "53361",
+    "LSFAN": "53361",
+    "LSFANTASIA": "10749",
+    "OPFANTA": "10749",
+    "ATTFISHER": "45393",
+    "YPKFISHER": "45393",
+    "ORTHFORSEA": "4187",
+    "ORTHFORSEA2": "4187",
+    "ATTGANRY": "80202",
+    "GNGANRY": "80202",
+    "LSGANRY": "80202",
+    "CHHIRSCH": "10757",
+    "DORHIRSCH": "10757",
+    "LSHIRSCH": "10757",
+    "LSKELSCH": "7560",
+    "OPKELSCH": "7560",
+    "GPRKIM": "86335",
+    "NYCKIM": "86335",
+    "DORKURIAN": "10761",
+    "PEDKURIAN1": "10761",
+    "PEDSKURIAN": "10761",
+    "DORMARTIN": "3933",
+    "OSMARTIN": "3933",
+    "FPPPATELLA": "53377",
+    "GCPATELLA": "53377",
+    "GPPATELLA": "53377",
+    "MHPATELLA": "53377",
+    "ATTPETRAKIS": "91147",
+    "DORPETRAKIS": "91147",
+    "GCPETRAKIS": "91147",
+    "GDNPETRAKI": "91147",
+    "GNPETRAKIS": "91147",
+    "DORPROTZEL": "53379",
+    "OSPROTZEL1": "53379",
+    "DORREISMAN": "91333",
+    "GNREISMAN": "91333",
+    "PEDSREIS": "91333",
+    "DORSALAMA": "10774",
+    "LSSALAMA": "10774",
+    "OSSALAMA": "10774",
+    "OSJSEGAL": "7535",
+    "GCSEGAL": "10806",
+    "DORSOBOTA": "53389",
+    "FPPJAS": "53389",
+    "GCSOBOTA": "53389",
+    "GNSOBOTA": "53389",
+    "ATTSULLI": "38789",
+    "DORSULLI": "38789",
+    "GNSULLI": "38789",
+    "OSSULLI": "38789",
+    "OSSEGAL": "10806"
+}
+
+provider_ser_map = {
+    "GNEPSTEIN": "",
+    "OOEPSTEIN": "",
+    "YPKHOU": "",
+    "DORABDYAN": "38916",
+    "GNABDYAN": "38916",
+    "PEDSBROF": "7515",
+    "FPPFAN": "18310",
+    "GCFAN": "18310",
+    "LSFAN": "18310",
+    "LSFANTASIA": "7846",
+    "OPFANTA": "7846",
+    "ATTFISHER": "163428",
+    "YPKFISHER": "163428",
+    "ORTHFORSEA": "7903",
+    "ORTHFORSEA2": "7903",
+    "ATTGANRY": "121978",
+    "GNGANRY": "121978",
+    "LSGANRY": "121978",
+    "CHHIRSCH": "4221",
+    "DORHIRSCH": "4221",
+    "LSHIRSCH": "4221",
+    "LSKELSCH": "15466",
+    "OPKELSCH": "15466",
+    "GPRKIM": "38834",
+    "NYCKIM": "38834",
+    "DORKURIAN": "17081",
+    "PEDKURIAN1": "17081",
+    "PEDSKURIAN": "17081",
+    "DORMARTIN": "6857",
+    "OSMARTIN": "6857",
+    "FPPPATELLA": "11070",
+    "GCPATELLA": "11070",
+    "GPPPATELLA": "11070",
+    "MHPATELLA": "11070",
+    "ATTPETRAKIS": "86650",
+    "DORPETRAKIS": "86650",
+    "GCPETRAKIS": "86650",
+    "GDNPETRAKI": "86650",
+    "GNPETRAKIS": "86650",
+    "DORPROTZEL": "14767",
+    "OSPROTZEL1": "14767",
+    "DORREISMAN": "17601",
+    "GNREISMAN": "17601",
+    "PEDSREIS": "17601",
+    "DORSALAMA": "1633",
+    "LSSALAMA": "1633",
+    "OSSALAMA": "1633",
+    "OSJSEGAL": "9108",
+    "GCSEGAL": "17735",
+    "DORSOBOTA": "9191",
+    "FPPJAS": "9191",
+    "GCSOBOTA": "9191",
+    "GNSOBOTA": "9191",
+    "ATTSULLI": "107364",
+    "DORSULLI": "107364",
+    "GNSULLI": "107364",
+    "OSSULLI": "107364",
+    "OSSEGAL": "17735"
 }

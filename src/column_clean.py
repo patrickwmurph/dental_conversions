@@ -18,4 +18,3 @@ def xml_clean():
         f.write(text)
 
     print("planned_treatments.csv written.")
-
