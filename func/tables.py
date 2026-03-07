@@ -1,3 +1,4 @@
+#TODO sami to provide E0486 mapping to update table
 procedure_map = {
     "PUD1": "WIS35",
     "PUD2": "WIS36",
@@ -45,6 +46,31 @@ procedure_map = {
     "Screening": "WIS79",
     "Stage II": "WIS80"
 }
+
+max_arch_proc = [
+    "D5211", 
+    "D5213", 
+    "D5225", 
+    "D5221", 
+    "D5223", 
+    "D5820", 
+    "D6112", 
+    "D5282"
+]
+
+man_arch_proc = [
+    "D5212", 
+    "D5214", 
+    "D5226", 
+    "D5222", 
+    "D5224", 
+    "D5821", 
+    "D6113", 
+    "D5283"
+]
+
+quad_proc = ["D5284", "D5286"]
+
 
 teeth_map = {
     "1": "94201",
@@ -150,6 +176,7 @@ teeth_map = {
     "99": "94299"
 }
 
+
 # Area of Oral Cavity Arch/Quad mapping
 arch_map = {
     "UA": 1,
@@ -163,6 +190,23 @@ quad_map = {
     "LR": 40
 }
 
+whole_mouth_codes = [
+    "D0364","D0380","D1553","D1556","D1999","D4210","D4211","D4230","D4231",
+    "D4240","D4241","D4260","D4261","D4263","D4264","D4342","D4341","D4921",
+    "D5110","D5120","D5130","D5140","D5284","D5286","D5810","D5811","D5867",
+    "D5875","D5876","D5931","D5932","D5933","D5936","D5937","D5952","D5953",
+    "D5960","D5982","D5983","D5984","D5985","D5986","D5987","D5988","D5991",
+    "D5992","D5993","D5994","D6112","D6113","D6116","D6117","D6190","D6920",
+    "D6985","D6999","D7260","D7261","D7292","D7293","D7294","D7295","D7296",
+    "D7297","D7310","D7311","D7320","D7321","D7340","D7350","D7410","D7411",
+    "D7412","D7413","D7414","D7415","D7440","D7441","D7450","D7451","D7460",
+    "D7461","D7465","D7471","D7473","D7485","D7490","D7510","D7511","D7520",
+    "D7521","D7550","D7970","D7972","D7997","D8010","D8020","D8030","D8040",
+    "D8681","D8696","D8697","D8698","D8699","D8701","D8702","D8703","D8704",
+    "D9210","D9211","D9212","D9215","D9910","D9941","D9942","D9943","D9944",
+    "D9945","D9946","D9950","D9951","D9952","D9972","D9975"
+]
+
 
 # Posterior/Anterior Surfaces
 surface_anterior_map = {
@@ -173,7 +217,9 @@ surface_anterior_map = {
     "O": 4,
     "F5": 7,
     "L5": 8,
-    "B5": 9
+    "B5": 9,
+    "F": 0,
+    "I": 4
 }
 
 surface_posterior_map = {
@@ -184,7 +230,10 @@ surface_posterior_map = {
     "I": 5,
     "F5": 7,
     "L5": 8,
-    "B5": 9
+    "B5": 9,
+    "B": 6,
+    "O": 5
+    
 }
 
 posterior_anatomy_vel = [
@@ -200,6 +249,8 @@ anterior_anatomy_vel = [
     "6", "7", "8", "9", "10", "11",
     "22", "23", "24", "25", "26", "27"
 ]
+
+# Default 49783
 
 provider_emp_map = {
     "GNEPSTEIN": "",
@@ -262,6 +313,7 @@ provider_emp_map = {
     "OSSEGAL": "10806"
 }
 
+# Default E1012
 provider_ser_map = {
     "GNEPSTEIN": "",
     "OOEPSTEIN": "",
@@ -295,7 +347,7 @@ provider_ser_map = {
     "OSMARTIN": "6857",
     "FPPPATELLA": "11070",
     "GCPATELLA": "11070",
-    "GPPPATELLA": "11070",
+    "GPPATELLA": "11070",
     "MHPATELLA": "11070",
     "ATTPETRAKIS": "86650",
     "DORPETRAKIS": "86650",
@@ -321,4 +373,79 @@ provider_ser_map = {
     "GNSULLI": "107364",
     "OSSULLI": "107364",
     "OSSEGAL": "17735"
+}
+
+finding_type_map = {
+    15000: 99,
+    15001: 99,
+    15002: 5,
+    15003: 5,
+    15004: 8,
+    15005: 99,
+    15006: 99,
+    15007: 99,
+    15008: 12,
+    15009: 6,
+    15011: 99,
+    15012: 99,
+    15102: 99,
+    15103: 99,
+    15104: 3,
+    15105: 3,
+    15106: 3,
+    15107: 7,
+    15108: 7,
+    15109: 7,
+    15110: 4,
+    15111: 99,
+    15112: 99,
+    15113: 99,
+    15115: 99,
+    15116: 99,
+    15117: 99,
+    15118: 99,
+    15119: 99,
+    15120: 14
+}
+
+finding_comment_map = {
+    15000: "Drifting - Mesial",
+    15001: "Drifting - Distal",
+    15002: "Impacted - Distal",
+    15003: "Impacted - Mesial",
+    15004: "Bleeding",
+    15005: "Abrasion",
+    15006: "Periodontal abscess",
+    15007: "Calculus",
+    15008: "Plaque",
+    15009: "Watch Tooth",
+    15011: "Hypersensitivity",
+    15012: "Recession",
+    15102: "Prem. loss, pri tooth, > a year",
+    15103: "Prem. loss, primary tooth",
+    15104: "Deep dentinal/cemental caries",
+    15105: "Caries/decay",
+    15106: "Incipient Caries",
+    15107: "Recurring caries/surface restor",
+    15108: "Restoration,poor marg.integrity",
+    15109: "Fractured restoration",
+    15110: "Fractured th, needs restoration",
+    15111: "Non-functional tooth",
+    15112: "Open contact - Mesial",
+    15113: "Open contact - Distal",
+    15115: "Periapical abscess",
+    15116: "Necrotic Pulp",
+    15117: "Abfraction",
+    15118: "Irreversible Pulpitis",
+    15119: "Reversible Pulpitis",
+    15120: "Retained Root Tip"
+}
+
+perio_map = {
+    "FD": 0,
+    "FC": 1,
+    "FM": 2,
+    "LM": 3,
+    "LC": 4,
+    "LD": 5
 }

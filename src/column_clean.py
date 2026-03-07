@@ -5,16 +5,16 @@ from io import StringIO
 import csv
 
 
-def xml_clean():
+def xml_clean(data, working_data):
     
     ## Planned Treatments
-    with open("data\DXE_Extract_PlannedTreatment.csv", "r", encoding="utf-8", newline="") as f:
+    with open(data, "r", encoding="utf-8", newline="") as f:
         text = f.read()
 
     text = re.sub(r",,?\r?\n,,\r?\n(?!\|)", ";", text)
     text = re.sub(r",,?\r?\n,,\r?\n(?=\|,,)", "", text)
     
-    with open("planned_treatments.csv", "w", encoding="utf-8", newline="") as f:
+    with open(working_data, "w", encoding="utf-8", newline="") as f:
         f.write(text)
 
-    print("planned_treatments.csv written.")
+    print(f"{working_data} written.")

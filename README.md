@@ -102,3 +102,10 @@ perioChartingMap = {
     "Enc Date"
 }
 ```
+
+## Note:
+- Planned/Existing Filter out:
+    - Any PatientID or ChartNumber w/ "_' in it
+    - Any PatientID or ChartNumber that is NA.
+    - Any NA procedure after mapping
+    - TEST provider
