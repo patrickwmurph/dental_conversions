@@ -44,7 +44,11 @@ procedure_map = {
     "perio": "WIS77",
     "PO": "WIS78",
     "Screening": "WIS79",
-    "Stage II": "WIS80"
+    "Stage II": "WIS80",
+    "D00045": "WIS81",
+    "D8670D": "WIS81",
+    "D19999": "WIS81",
+    "D0150*": "WIS81"
 }
 
 max_arch_proc = [
@@ -70,7 +74,6 @@ man_arch_proc = [
 ]
 
 quad_proc = ["D5284", "D5286"]
-
 
 teeth_map = {
     "1": "94201",
@@ -176,7 +179,6 @@ teeth_map = {
     "99": "94299"
 }
 
-
 # Area of Oral Cavity Arch/Quad mapping
 arch_map = {
     "UA": 1,
@@ -190,6 +192,20 @@ quad_map = {
     "LR": 40
 }
 
+# Procedures w/ allowed AOC of only 0 and require an AOC to be documented
+require_zero_AOC = [
+    "D6190",
+    "D7288",
+    "D1206",
+    "D1208",
+    "D7285",
+    "D7286",
+    "D7287",
+    "D7284"
+]
+
+
+# This represents codes that can not have a 0 AOC
 whole_mouth_codes = [
     "D0364","D0380","D1553","D1556","D1999","D4210","D4211","D4230","D4231",
     "D4240","D4241","D4260","D4261","D4263","D4264","D4342","D4341","D4921",
@@ -207,6 +223,11 @@ whole_mouth_codes = [
     "D9945","D9946","D9950","D9951","D9952","D9972","D9975"
 ]
 
+#TODO add table to remove teethvel D5110, D5120, D5130 remove toothVEL
+#TODO if AOC is 0 remove teethvel
+#TODO if cleaning D-Code remove teethvel
+
+#TODO surface mapping from Sami
 
 # Posterior/Anterior Surfaces
 surface_anterior_map = {
@@ -217,9 +238,9 @@ surface_anterior_map = {
     "O": 4,
     "F5": 7,
     "L5": 8,
-    "B5": 9,
+    "B5": 7,
     "F": 0,
-    "I": 4
+    "I": 4,
 }
 
 surface_posterior_map = {
@@ -228,7 +249,7 @@ surface_posterior_map = {
     "M": 2,
     "D": 3,
     "I": 5,
-    "F5": 7,
+    "F5": 9,
     "L5": 8,
     "B5": 9,
     "B": 6,
@@ -240,11 +261,12 @@ posterior_anatomy_vel = [
     "A", "B", "J", "K", "L", "S", "T",
     "1", "2", "3", "4", "5",
     "12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
-    "28", "29", "30", "31", "32"
+    "28", "29", "30", "31", "32",
+    "I"
 ]
 
 anterior_anatomy_vel = [
-    "C", "D", "E", "F", "G", "H", "I",
+    "C", "D", "E", "F", "G", "H",
     "M", "N", "O", "P", "Q", "R",
     "6", "7", "8", "9", "10", "11",
     "22", "23", "24", "25", "26", "27"
@@ -310,7 +332,57 @@ provider_emp_map = {
     "DORSULLI": "38789",
     "GNSULLI": "38789",
     "OSSULLI": "38789",
-    "OSSEGAL": "10806"
+    "OSSEGAL": "10806",
+     "GPRARAK": "93522",
+    "GPRBERKA": "89243",
+    "GPRBIESTY": "73673",
+    "GPRCHOY": "62119",
+    "GPRCONIG": "92434",
+    "GPRDINATA": "72732",
+    "GPRELKO": "87743",
+    "GPRGENACK": "89936",
+    "GPRGHA": "75180",
+    "GPRLARINA": "63207",
+    "GPRLEIBO": "69284",
+    "GPRPIMEN": "71306",
+    "GPRRE": "79160",
+    "GPRTSUKER": "72088",
+    "GPRSTUTMAN": "77141",
+    "GPRYU": "64960",
+    "GPRFINAZZO": "93666",
+    "GPRSCANAPI": "67900",
+    "OSJAUHAR": "49246",
+    "OSELBAGORY": "49270",
+    "GPRGORG": "94832",
+    "GPRKIM": "86335",
+    "OSKOCAK": "49247",
+    "OSSUMLER": "49271",
+    "OSBAST": "49207",
+    "OSANTON": "49244",
+    "OSMO": "49241",
+    "OSKWON": "49206",
+    "OSOLIVARES": "49245",
+    "OSMASS": "49223",
+    "OSKAUR": "49248",
+    "OSALAM": "49213",
+    "OSYOON": "49242",
+    "OSPATEL": "49201",
+    "OSDANNA": "49231",
+    "OSGUO": "49219",
+    "OSSZE": "49197",
+    "OSRAZA": "49234",
+    "PEDSCAN": "70380",
+    "PEDSESMAE": "74958",
+    "PEDSMICH": "63560",
+    "PEDSPARZI": "69619",
+    "PEDFOSTER": "92582",
+    "PEDBONITTO": "74376",
+    "PEDLIN": "78654",
+    "PEDKANNA": "90378",
+    "HYG1": "69058",
+    "HGYKELLY": "77703",
+    "MNADEGE": "84837",
+    "MHVAN": "88865"
 }
 
 # Default E1012
@@ -372,80 +444,136 @@ provider_ser_map = {
     "DORSULLI": "107364",
     "GNSULLI": "107364",
     "OSSULLI": "107364",
-    "OSSEGAL": "17735"
+    "OSSEGAL": "17735",
+     "GPRARAK": "169729",
+    "GPRBERKA": "169712",
+    "GPRBIESTY": "169481",
+    "GPRCHOY": "169875",
+    "GPRCONIG": "169766",
+    "GPRDINATA": "169531",
+    "GPRELKO": "169328",
+    "GPRGENACK": "169507",
+    "GPRGHA": "169475",
+    "GPRLARINA": "169492",
+    "GPRLEIBO": "169509",
+    "GPRPIMEN": "169521",
+    "GPRRE": "169327",
+    "GPRTSUKER": "169376",
+    "GPRSTUTMAN": "148383",
+    "GPRYU": "148150",
+    "GPRFINAZZO": "148719",
+    "GPRSCANAPI": "148204",
+    "OSJAUHAR": "148652",
+    "OSELBAGORY": "169546",
+    "GPRGORG": "38968",
+    "GPRKIM": "38834",
+    "OSKOCAK": "148658",
+    "OSSUMLER": "169595",
+    "OSBAST": "3843",
+    "OSANTON": "148465",
+    "OSMO": "148264",
+    "OSKWON": "19442",
+    "OSOLIVARES": "148612",
+    "OSMASS": "8585",
+    "OSKAUR": "148545",
+    "OSALAM": "14995",
+    "OSYOON": "148741",
+    "OSPATEL": "38901",
+    "OSDANNA": "7729",
+    "OSGUO": "4179",
+    "OSSZE": "9247",
+    "OSRAZA": "17595",
+    "PEDSCAN": "148253",
+    "PEDSESMAE": "148345",
+    "PEDSMICH": "148122",
+    "PEDSPARZI": "148240",
+    "PEDFOSTER": "163324",
+    "PEDBONITTO": "163289",
+    "PEDLIN": "163302",
+    "PEDKANNA": "163295",
+    "HYG1": "111060",
+    "HGYKELLY": "117160",
+    "MNADEGE": "119970",
+    "MHVAN": "114428"
 }
 
 finding_type_map = {
-    15000: 99,
-    15001: 99,
-    15002: 5,
-    15003: 5,
-    15004: 8,
-    15005: 99,
-    15006: 99,
-    15007: 99,
-    15008: 12,
-    15009: 6,
-    15011: 99,
-    15012: 99,
-    15102: 99,
-    15103: 99,
-    15104: 3,
-    15105: 3,
-    15106: 3,
-    15107: 7,
-    15108: 7,
-    15109: 7,
-    15110: 4,
-    15111: 99,
-    15112: 99,
-    15113: 99,
-    15115: 99,
-    15116: 99,
-    15117: 99,
-    15118: 99,
-    15119: 99,
-    15120: 14
+    "15000": 99,
+    "15001": 99,
+    "15002": 5,
+    "15003": 5,
+    "15004": 8,
+    "15005": 99,
+    "15006": 99,
+    "15007": 99,
+    "15008": 12,
+    "15009": 6,
+    "15011": 99,
+    "15012": 99,
+    "15102": 99,
+    "15103": 99,
+    "15104": 3,
+    "15105": 3,
+    "15106": 3,
+    "15107": 7,
+    "15108": 7,
+    "15109": 7,
+    "15110": 4,
+    "15111": 99,
+    "15112": 99,
+    "15113": 99,
+    "15115": 99,
+    "15116": 99,
+    "15117": 99,
+    "15118": 99,
+    "15119": 99,
+    "15120": 14
+}
+
+finding_type_dentition_map ={
+    "15100": "0",
+    "15101": "0",
+    "15114": "2"
 }
 
 finding_comment_map = {
-    15000: "Drifting - Mesial",
-    15001: "Drifting - Distal",
-    15002: "Impacted - Distal",
-    15003: "Impacted - Mesial",
-    15004: "Bleeding",
-    15005: "Abrasion",
-    15006: "Periodontal abscess",
-    15007: "Calculus",
-    15008: "Plaque",
-    15009: "Watch Tooth",
-    15011: "Hypersensitivity",
-    15012: "Recession",
-    15102: "Prem. loss, pri tooth, > a year",
-    15103: "Prem. loss, primary tooth",
-    15104: "Deep dentinal/cemental caries",
-    15105: "Caries/decay",
-    15106: "Incipient Caries",
-    15107: "Recurring caries/surface restor",
-    15108: "Restoration,poor marg.integrity",
-    15109: "Fractured restoration",
-    15110: "Fractured th, needs restoration",
-    15111: "Non-functional tooth",
-    15112: "Open contact - Mesial",
-    15113: "Open contact - Distal",
-    15115: "Periapical abscess",
-    15116: "Necrotic Pulp",
-    15117: "Abfraction",
-    15118: "Irreversible Pulpitis",
-    15119: "Reversible Pulpitis",
-    15120: "Retained Root Tip"
+    "15000": "Drifting - Mesial",
+    "15001": "Drifting - Distal",
+    "15002": "Impacted - Distal",
+    "15003": "Impacted - Mesial",
+    "15004": "Bleeding",
+    "15005": "Abrasion",
+    "15006": "Periodontal abscess",
+    "15007": "Calculus",
+    "15008": "Plaque",
+    "15009": "Watch Tooth",
+    "15011": "Hypersensitivity",
+    "15012": "Recession",
+    "15102": "Prem. loss, pri tooth, > a year",
+    "15103": "Prem. loss, primary tooth",
+    "15104": "Deep dentinal/cemental caries",
+    "15105": "Caries/decay",
+    "15106": "Incipient Caries",
+    "15107": "Recurring caries/surface restor",
+    "15108": "Restoration,poor marg.integrity",
+    "15109": "Fractured restoration",
+    "15110": "Fractured th, needs restoration",
+    "15111": "Non-functional tooth",
+    "15112": "Open contact - Mesial",
+    "15113": "Open contact - Distal",
+    "15115": "Periapical abscess",
+    "15116": "Necrotic Pulp",
+    "15117": "Abfraction",
+    "15118": "Irreversible Pulpitis",
+    "15119": "Reversible Pulpitis",
+    "15120": "Retained Root Tip"
 }
 
 perio_map = {
-    "FD": 0,
-    "FC": 1,
-    "FM": 2,
-    "LM": 3,
-    "LC": 4,
-    "LD": 5
+    "FD": "0",
+    "FC": "1",
+    "FM": "2",
+    "LM": "3",
+    "LC": "4",
+    "LD": "5"
 }

@@ -1,4 +1,6 @@
 import pandas as pd
+from datetime import datetime
+import numpy as np
 from func.tables import (
     # procedure mappings
     procedure_map,
@@ -22,10 +24,29 @@ from func.tables import (
     quad_map,
     whole_mouth_codes,
 )
-from func.func import xml_clean, format_pid, set_resid, map_teeth, map_surfaces, map_provider, map_procedure, format_procedure, consolidate_partial_dentures, create_area_of_oral_cavity, quad_category_column
 
-# xml_clean("data\DXE_Extract_ExistingTreatment.csv", "working_data/existing_treatments.csv")
+from func.func import (
+    xml_clean2, 
+    format_pid, 
+    set_resid, 
+    map_teeth, 
+    map_surfaces, 
+    map_provider, 
+    map_procedure, 
+    format_procedure, 
+    consolidate_partial_dentures, 
+    create_area_of_oral_cavity, 
+    quad_category_column, 
+    instant_calc, 
+    filter_full_mouth_codes,
+    pip_count_cleaning
+)
 
+# pip_count_cleaning("data\DXE_Extract_ExistingTreatment.csv", "working_data/existing_treatments.csv")
+
+# xml_clean2("data\DXE_Extract_ExistingTreatment.csv", "working_data/existing_treatments.csv")
+
+# Clean XML
 existing_treatments = pd.read_csv("working_data/existing_treatments.csv", delimiter="|")
 existing_treatments = existing_treatments.shift(axis=1).reset_index()
 
@@ -54,6 +75,7 @@ existing_treatments = map_teeth(
     "ToothVEL"
 )
 
+# Area of Oral Cavity Column Creation
 existing_treatments = create_area_of_oral_cavity(
     existing_treatments,
     arch_map,
@@ -63,6 +85,14 @@ existing_treatments = create_area_of_oral_cavity(
     arch_column = "Arch",
     quadrant_column="Quadrant",
     target_column="AreaofOralCavity"
+)
+
+# Area of Oral Cavity 0s
+existing_treatments = filter_full_mouth_codes(
+    existing_treatments,
+    "AreaofOralCavity",
+    "Procedure",
+    whole_mouth_codes
 )
 
 # Quad Mapping Column
@@ -83,6 +113,9 @@ existing_treatments = map_surfaces(
     posterior_anatomy_vel
 )
 
+surfaces_test = existing_treatments[existing_treatments["Surfaces"].notna()][["Surfaces","Surfaces_Mapped"]]
+
+
 # Provider Map (EMP)
 existing_treatments = map_provider(
     existing_treatments,
@@ -95,7 +128,7 @@ existing_treatments = map_provider(
 # Provider Map (SER)
 existing_treatments = map_provider(
     existing_treatments,
-    provider_emp_map,
+    provider_ser_map,
     "Provider",
     "Provider_Mapped",
     "E1012"
@@ -150,7 +183,54 @@ existing_treatments = consolidate_partial_dentures(
     quad_category_column="Quad_Category",
     group_on_quad=True
 )
-#TODO calculate comp instant.
+
+
+## Calculate Update Instant
+existing_treatments = instant_calc(
+    existing_treatments,
+    "UpdateInstant",
+    "Update Inst (UTC)"
+)
+
+## Calculate Completed Instant
+existing_treatments = instant_calc(
+    existing_treatments,
+    "CompInstant",
+    "Comp Inst"
+)
+
+## Partial Denture Inact VEl Mapping
+mask = existing_treatments["ToothVEL"].astype(str).str.contains("\n", na=False)
+
+existing_treatments["Inact VEL"] = np.nan
+
+filtered = existing_treatments.loc[mask].copy()
+
+filtered = filtered.sort_values(
+    ["ChartNumber", "CompInstant"],
+    ascending=[True, False]
+)
+
+older_rows = filtered.groupby("ChartNumber").cumcount() > 0
+
+older_idx = filtered.loc[older_rows].index
+
+existing_treatments.loc[older_idx, "Inact VEL"] = existing_treatments.loc[older_idx, "ToothVEL"]
+
+existing_treatments.loc[older_idx, "ToothVEL"] = np.nan
+
+## Filter out LOS from procedures
+existing_treatments = existing_treatments[~existing_treatments["Procedure"].astype(str).str.contains(r"99\d{3}", na=False)]
+
+## Remove ",,," from DX
+existing_treatments["AssociatedDiagnosis"] = existing_treatments["AssociatedDiagnosis"].astype(str).str.replace(",,,", "", regex=False)
+
+## Filter out NA Procedures
+existing_treatments = existing_treatments[existing_treatments["Procedure"].notna()]
+
+## Remove characters from end if Comments exceeds 254 characters
+existing_treatments["Comments"] = existing_treatments["Comments"].astype("string").str.slice(0, 254)
+
 existing_treatments.to_csv("existing_treatments_unformatted.csv", sep = "|", index=False)
 
 # Reformat Columns
@@ -159,22 +239,23 @@ existing_treatment_reformatted = existing_treatments.assign(
         "ID": existing_treatments["RESID"],
         "Patient ID": existing_treatments["ChartNumber"],
         "Tooth VEL": existing_treatments["ToothVEL"],
-        "Encounter CSN":"G^1",
+        "Inact VEL": existing_treatments["Inact VEL"],
         "Additional Tooth VEL":"",
+        "Encounter CSN":"G^1",
         "Surfaces": existing_treatments["Surfaces_Mapped"],
         "Procedure": existing_treatments["Procedure_Mapped"],
-        "Comp Inst":existing_treatments["CompInstant"],
-        # "Provider":existing_treatments["Provider"],
-        "Assoc Diag": existing_treatments["AssociatedDiagnosis"],
+        "Comp Inst":existing_treatments["Comp Inst"],
+        "Provider":existing_treatments["Provider_Mapped"],
+        "Assoc Diag": "",
         "Comment": existing_treatments["Comments"],
         "Area of Oral Cavity": existing_treatments["AreaofOralCavity"],
         "Inactive For Area":"",
         "Exist Proc":"",
         "Update User (EMP)": existing_treatments["Update User"],
-        "Update Instant":existing_treatments["UpdateInstant"],
-        "Enc Dep":"",
-        "Enc Prov":existing_treatments["Provider"],
-        "Enc Date":""
+        "Update Inst (UTC)":existing_treatments["Update Inst (UTC)"],
+        "Enc Dep":"490",
+        "Enc Prov":existing_treatments["Provider_Mapped"],
+        "Enc Date": datetime.today().strftime("%m/%d/%Y")
     }
 )
 
@@ -184,8 +265,9 @@ existing_treatment_reformatted = existing_treatment_reformatted[
         "ID",
         "Patient ID",
         "Tooth VEL",
-        "Encounter CSN",
+        "Inact VEL",
         "Additional Tooth VEL",
+        "Encounter CSN",
         "Surfaces",
         "Procedure",
         "Comp Inst",
@@ -196,11 +278,15 @@ existing_treatment_reformatted = existing_treatment_reformatted[
         "Inactive For Area",
         "Exist Proc",
         "Update User (EMP)",
-        "Update Instant",
+        "Update Inst (UTC)",
         "Enc Dep",
         "Enc Prov",
         "Enc Date"
     ]
 ]
 
-existing_treatment_reformatted.to_csv("existing_treatments_formatted.csv", sep = "|", index=False)
+existing_treatment_dfs = np.array_split(existing_treatment_reformatted, 3)
+
+# Export each chunk
+for i, df_chunk in enumerate(existing_treatment_dfs, start=1):
+    df_chunk.to_csv(f"existing_treatments_formatted_part{i}.csv", sep="|", index=False)

@@ -1,10 +1,13 @@
 import pandas as pd
-from func.tables import procedure_map, teeth_map, surface_anterior_map, surface_posterior_map, posterior_anatomy_vel, anterior_anatomy_vel, provider_emp_map, max_arch_proc, man_arch_proc, quad_proc
-from func.func import xml_clean, format_pid, set_resid, map_teeth, map_surfaces, map_provider, map_procedure, format_procedure, quad_category_column, consolidate_partial_dentures
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from func.tables import procedure_map, teeth_map, surface_anterior_map, surface_posterior_map, posterior_anatomy_vel, anterior_anatomy_vel, provider_emp_map, max_arch_proc, man_arch_proc, quad_proc, whole_mouth_codes
+from func.func import xml_clean, format_pid, set_resid, map_teeth, map_surfaces, map_provider, map_procedure, format_procedure, quad_category_column, consolidate_partial_dentures, filter_full_mouth_codes
 
 # Format XML
 # xml_clean("data\DXE_Extract_PlannedTreatment.csv", "working_data/planned_treatments.csv")
 
+# Read CSV
 planned_treatments = pd.read_csv("working_data/planned_treatments.csv", delimiter="|")
 planned_treatments = planned_treatments.shift(axis=1).reset_index()
 
@@ -38,6 +41,14 @@ planned_treatments = quad_category_column(
     planned_treatments,
     "AnatomyVEL",
     "Quad_Category"
+)
+
+## Area of Oral Cavity 0s
+planned_treatments = filter_full_mouth_codes(
+    planned_treatments,
+    "AreaofOralCavity",
+    "Procedure",
+    whole_mouth_codes
 )
 
 # Surface Map
@@ -109,8 +120,23 @@ planned_treatments = consolidate_partial_dentures(
     group_on_quad=True
 )
 
-planned_treatments.to_csv("planned_treatments_unformatted.csv", sep="|", index=False)
+## Instant
+epic_epoch = datetime(1840, 12, 31, tzinfo=ZoneInfo("America/New_York"))
+now_et = datetime.now(ZoneInfo("America/New_York"))
 
+planned_treatments["Update Inst (UTC)"] = int((now_et - epic_epoch).total_seconds())
+
+## Filter out LOS from procedures
+planned_treatments = planned_treatments[~planned_treatments["Procedure"].astype(str).str.contains(r"99\d{3}", na=False)]
+
+# Fix data types
+planned_treatments["AreaofOralCavity"] = planned_treatments["AreaofOralCavity"].astype(str).str.replace(r'\.0$', '', regex=True)
+
+## Remove ",,," from DX
+# planned_treatments["AssociatedDiagnosis"] = planned_treatments["AssociatedDiagnosis"].astype(str).str.replace(",,,", "", regex=False)
+
+## To CSV
+planned_treatments.to_csv("planned_treatments_unformatted.csv", sep="|", index=False)
 
 # Reformat Columns
 planned_treatment_reformatted = planned_treatments.assign(
@@ -125,7 +151,7 @@ planned_treatment_reformatted = planned_treatments.assign(
         "Area of Oral Cavity": planned_treatments["AreaofOralCavity"],
         "Substatus": "",
         "Update User (EMP)": planned_treatments["Update User"],
-        "Updated Inst (UTC)": ""
+        "Update Inst (UTC)":planned_treatments["Update Inst (UTC)"]
     }
 )
 
@@ -142,7 +168,7 @@ planned_treatment_reformatted = planned_treatment_reformatted[
         "Area of Oral Cavity",
         "Substatus",
         "Update User (EMP)",
-        "Updated Inst (UTC)"
+        "Update Inst (UTC)"
     ]
 ]
 

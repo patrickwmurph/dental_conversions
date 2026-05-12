@@ -3,10 +3,10 @@
 ## Data to Import Spec Mapping
 Extract File Name | Import Spec |
 ---------|----------|
- data\DXE_Extract_ExistingTreatment.csv | res1703 |
- data\DXE_Extract_PlannedTreatment.csv | res1704 |
- data\DXE_Extract_Findings.csv | res1702 |
- data\DXE_Extract_PerioCharting.csv | res1705 |
+ Existing Treatments | res1703 |
+ Planned Treatments | res1706 |
+ Findings | res1702 |
+ Perio Charting | res1705 |
 
 
 ### Column Mappings `Import Spec:Extract`

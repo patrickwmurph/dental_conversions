@@ -3,13 +3,98 @@ import re
 from io import StringIO
 import csv
 
+# Existing Treatments Cleaning
+
 # XML Cleaning
-#TODO does not work for findings.
+def xml_clean2(data, working_data):
+     rows = []
+     buffer = ""
+
+     with open(data, "r", encoding="cp1252", errors="ignore") as f:
+         for line in f:
+             line = line.replace("\x07", "")  # remove bad char
+             line = line.rstrip("\r\n")       # NEW
+
+             # ✅ updated row detection
+             if re.match(r"^\|[^|]+\|", line) and buffer:
+                 rows.append(buffer.strip())
+                 buffer = line
+             else:
+                 buffer += line
+
+         if buffer:
+             rows.append(buffer.strip())
+
+     # flatten multi-line comments
+     cleaned_rows = [
+         re.sub(r"\r?\n+", ";", r) for r in rows
+     ]
+
+     with open(working_data, "w", encoding="utf-8", newline="") as f:
+         for r in cleaned_rows:
+             f.write(r + "\n")
+
+     print(f"{working_data} written.")
+
+def pip_count_cleaning(data, working_data, expected_pipes=17):
+
+    with open(data, "r", encoding="cp1252") as f:
+        raw = f.read()
+
+    # Normalize line endings
+    raw = raw.replace("\r\n", "\n")
+
+    # Split physical lines
+    lines = raw.split("\n")
+
+    # Preserve header row exactly
+    header = lines[0]
+
+    # Remaining rows only
+    data_lines = lines[1:]
+
+    rebuilt_rows = []
+    current = ""
+
+    for line in data_lines:
+
+        # Skip fully empty lines
+        if not line.strip():
+            continue
+
+        # Add separator for continued multiline text
+        if current:
+            current += ";"
+
+        # Append current fragment
+        current += line.strip()
+
+        # Row complete once expected pipe count reached
+        if current.count("|") >= expected_pipes:
+
+            rebuilt_rows.append(current)
+            current = ""
+
+    # Catch dangling partial row
+    if current:
+        rebuilt_rows.append(current)
+
+    # Rebuild final text
+    text = header + "\n" + "\n".join(rebuilt_rows)
+
+    # Cleanup duplicate semicolons
+    text = re.sub(r";{2,}", ";", text)
+
+    with open(working_data, "w", encoding="utf-8", newline="") as f:
+        f.write(text)
+
+    print(f"{working_data} written.")
+
 
 def xml_clean(data, working_data):
     with open(data, "r", encoding="cp1252") as f:
         text = f.read()
-
+    
     # 1) Turn paragraph breaks (blank lines) into a single semicolon
     text = re.sub(r"\r?\n\r?\n+", ";", text)
 
@@ -93,13 +178,15 @@ def instant_calc(df, col_name, new_col_name=None):
     
     return df
 
-#TODO likely leave unmapped as NA once analysis is complete, this is throwing errors. Or fill w/ something else.
 def map_teeth(df, teeth_map, source_column, target_column):
         source = df[source_column].astype('string').str.strip() # save off source column
         mapped = source.map(teeth_map) # apply map teeth based on table
-        df[target_column] = mapped.fillna(source) # fill na w/ previous values
+        df[target_column] = mapped #.fillna(source) # fill na w/ previous values
          
         return df
+
+#TODO Set 0 AOC for procedures where it is the only allowed AOC
+#TODO Check procedures that require teeth
 
 def create_area_of_oral_cavity(
     df,
@@ -129,11 +216,22 @@ def create_area_of_oral_cavity(
     df.loc[mask_quad, target_column] = quad.loc[mask_quad].map(quad_map)
 
     # If neither Arch nor Quadrant is populated:
-    mask_neither = ~mask_arch & ~mask_quad
-    mask_whole_mouth = mask_neither & proc.isin(whole_mouth_codes)
+    # mask_neither = ~mask_arch & ~mask_quad
+    # mask_whole_mouth = mask_neither & proc.isin(whole_mouth_codes)
 
-    df.loc[mask_whole_mouth, target_column] = 0
-    df.loc[mask_neither & ~proc.isin(whole_mouth_codes), target_column] = "NAA"
+    # df.loc[mask_whole_mouth, target_column] = 0
+    # df.loc[mask_neither & ~proc.isin(whole_mouth_codes), target_column] = pd.NA
+
+    return df
+
+def filter_full_mouth_codes(df, source_column, procedure_column, whole_mouth_codes):
+    df = df.copy()
+
+    mask_source_zero = df[source_column] == 0
+    mask_valid_proc = df[procedure_column].isin(whole_mouth_codes)
+
+    # Where source = 0 AND procedure NOT in list → set NA
+    df.loc[(mask_source_zero & mask_valid_proc), source_column] = pd.NA
 
     return df
 
@@ -153,7 +251,6 @@ def quad_category_column(df, teeth_column, target_column="Quad_Category"):
 
     return df
 
-#TODO likely leave unmapped as NA once analysis is complete, this is throwing errors. Or fill w/ something else.
 def map_surfaces(
     df,
     anatomy_column,
@@ -168,29 +265,40 @@ def map_surfaces(
 
     def map_surface_string(surface_string, surface_map):
         if pd.isna(surface_string) or str(surface_string).strip() == "":
-            return surface_string
+            return pd.NA
 
         surface_string = str(surface_string).strip().upper()
         mapped = []
         i = 0
 
+        # valid sets
+        valid_keys = set(surface_map.keys())
+        valid_values = set(str(v) for v in surface_map.values())
+
         while i < len(surface_string):
             two_char = surface_string[i:i+2]
 
+            # Try 2-character match
             if two_char in surface_map:
                 mapped.append(str(surface_map[two_char]))
                 i += 2
+
+            # Try 1-character match
             elif surface_string[i] in surface_map:
                 mapped.append(str(surface_map[surface_string[i]]))
                 i += 1
-            else:
-                mapped.append(surface_string[i])
-                i += 1
 
-        return "".join(mapped)
+            else:
+                return pd.NA
+
+        # Final safety check (probably redundant but safe)
+        if not all(val in valid_values for val in mapped):
+            return pd.NA
+
+        return "\n".join(mapped)
 
     df = df.copy()
-    df["Surfaces_Mapped"] = surfaces
+    df["Surfaces_Mapped"] = pd.NA
 
     # Anterior
     mask_anterior = anatomy.isin(anterior_anatomy_vel)
@@ -226,11 +334,14 @@ def map_provider(
     
     return df
 
-
 def map_procedure(df, mapping_table, fallback_value, comments_column, filter_fallback=False):
     df = df.copy()
 
+    # Normalize mapping table keys to uppercase
+    mapping_upper = {str(k).strip().upper(): v for k, v in mapping_table.items()}
+
     proc = df["Procedure"].astype("string").str.strip()
+    proc_upper = proc.str.upper()
 
     # CDT/CPT patterns
     cdt_re = r"^D\d{4}$"
@@ -238,34 +349,32 @@ def map_procedure(df, mapping_table, fallback_value, comments_column, filter_fal
     cpt_re = r"^\d{5}$"
     cpt_re_t = r"^\d{4}[A-Za-z]$"
 
-    is_cdt = proc.str.upper().str.match(cdt_re, na=False)
-    is_cdt_d = proc.str.upper().str.match(cdt_re_d, na=False)
+    is_cdt = proc_upper.str.match(cdt_re, na=False)
+    is_cdt_d = proc_upper.str.match(cdt_re_d, na=False)
     is_cpt = proc.str.match(cpt_re, na=False)
-    is_cpt_t = proc.str.upper().str.match(cpt_re_t, na=False)
+    is_cpt_t = proc_upper.str.match(cpt_re_t, na=False)
 
-    mapped = proc.map(mapping_table)
+    mapped = proc_upper.map(mapping_upper)
 
-    # Only preserve values that match valid procedure regex
     preserve_original = is_cdt | is_cdt_d | is_cpt | is_cpt_t
 
     result = mapped.fillna(proc)
 
-    # Anything unmapped and not matching allowed regex becomes fallback
     needs_fallback = mapped.isna() & ~preserve_original
     result = result.mask(needs_fallback, fallback_value)
 
     df["Procedure_Mapped"] = result
 
-    # Identify rows where we should append a comment
     comment_mask = mapped.notna() | needs_fallback
 
-    # Ensure comment column exists and is string-safe
     df[comments_column] = df.get(comments_column, "").astype("string").fillna("")
 
-    comment_text = ";Dentrix Pre-Conversion Procedure: " + proc
+    comment_text = "Dentrix Pre-Conversion Procedure: " + proc
 
     df.loc[comment_mask, comments_column] = (
-        df.loc[comment_mask, comments_column].str.rstrip(";") + comment_text[comment_mask]
+        comment_text[comment_mask]
+        + ";"
+        + df.loc[comment_mask, comments_column].str.rstrip(";")
     )
 
     if filter_fallback:
@@ -285,8 +394,6 @@ def format_procedure(df, column_name):
 
 
 # Partial Denture Code
-import pandas as pd
-
 def consolidate_partial_dentures(
     df,
     patient_column="PatientID",
@@ -349,7 +456,7 @@ def consolidate_partial_dentures(
                     seen.add(tooth)
                     teeth_list.append(tooth)
 
-        return ",".join(teeth_list) if teeth_list else pd.NA
+        return "\n".join(teeth_list) if teeth_list else pd.NA #update commas
 
     def consolidate_group(group):
         # Base preserved row comes from AOC-priority logic
@@ -398,11 +505,18 @@ def consolidate_partial_dentures(
 
 # Finding Type+Comment Mapping
 def map_findings(df, finding_type_map, finding_comment_map):
-    df["Finding_Type"] = df["FindingType"].map(finding_type_map).fillna(df["FindingType"])
+    df["FindingType"] = df["FindingType"].astype("string").str.strip()
+    df["Finding_Type"] = df["FindingType"].map(finding_type_map)
     df["Finding_Comment"] = df["FindingType"].map(finding_comment_map)
     return df
 
+def map_dentition_tooth_status(df, finding_type_dentition_map):
+    df["FindingType"] = df["FindingType"].astype("string").str.strip()
+    df["Tooth Status"] = df["FindingType"].map(finding_type_dentition_map)
+    return df
+
+
 # Perio Location Mapping
 def map_perio_loc(df, perio_map):
-    df["Dental:Perio Location"] = df["DentalLocation"].map(perio_map).fillna(df["DentalLocation"])
+    df["Dental:Perio Location"] = df["DentalLocation"].map(perio_map)
     return df
