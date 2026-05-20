@@ -25,6 +25,7 @@ from func.tables import (
     whole_mouth_codes,
 )
 
+
 from func.func import (
     xml_clean2, 
     format_pid, 
@@ -35,6 +36,7 @@ from func.func import (
     map_procedure, 
     format_procedure, 
     consolidate_partial_dentures, 
+    consolidate_partial_dentures2,
     create_area_of_oral_cavity, 
     quad_category_column, 
     instant_calc, 
@@ -44,7 +46,7 @@ from func.func import (
 
 # pip_count_cleaning("data\DXE_Extract_ExistingTreatment.csv", "working_data/existing_treatments.csv")
 
-# xml_clean2("data\DXE_Extract_ExistingTreatment.csv", "working_data/existing_treatments.csv")
+# OLD xml_clean2("data\DXE_Extract_ExistingTreatment.csv", "working_data/existing_treatments.csv")
 
 # Clean XML
 existing_treatments = pd.read_csv("working_data/existing_treatments.csv", delimiter="|")
@@ -147,42 +149,74 @@ existing_treatments = map_procedure(
 existing_treatments = format_procedure(existing_treatments, "Procedure_Mapped")
 
 # Partial Denture
-
-## Maxillary Arch
-existing_treatments = consolidate_partial_dentures(
+# # Maxillary Arch
+existing_treatments = consolidate_partial_dentures2(
     existing_treatments,
     patient_column="ChartNumber",
-    procedure_column = "Procedure",
-    teeth_column = "ToothVEL",
-    area_column="AreaofOralCavity",
+    procedure_column="Procedure",
+    teeth_column="ToothVEL",
     procedure_filter=max_arch_proc,
     quad_category_column="Quad_Category",
     group_on_quad=False
 )
 
-## Mandibular Arch
-existing_treatments = consolidate_partial_dentures(
+# Mandibular Arch
+existing_treatments = consolidate_partial_dentures2(
     existing_treatments,
     patient_column="ChartNumber",
-    procedure_column = "Procedure",
-    teeth_column = "ToothVEL",
-    area_column="AreaofOralCavity",
+    procedure_column="Procedure",
+    teeth_column="ToothVEL",
     procedure_filter=man_arch_proc,
     quad_category_column="Quad_Category",
     group_on_quad=False
 )
 
-## Quad
-existing_treatments = consolidate_partial_dentures(
+# Quad
+existing_treatments = consolidate_partial_dentures2(
     existing_treatments,
     patient_column="ChartNumber",
-    procedure_column = "Procedure",
-    teeth_column = "ToothVEL",
-    area_column="AreaofOralCavity",
+    procedure_column="Procedure",
+    teeth_column="ToothVEL",
     procedure_filter=quad_proc,
     quad_category_column="Quad_Category",
     group_on_quad=True
 )
+
+# # Maxillary Arch
+# existing_treatments = consolidate_partial_dentures(
+#     existing_treatments,
+#     patient_column="ChartNumber",
+#     procedure_column = "Procedure",
+#     teeth_column = "ToothVEL",
+#     area_column="AreaofOralCavity",
+#     procedure_filter=max_arch_proc,
+#     quad_category_column="Quad_Category",
+#     group_on_quad=False
+# )
+
+# ## Mandibular Arch
+# existing_treatments = consolidate_partial_dentures(
+#     existing_treatments,
+#     patient_column="ChartNumber",
+#     procedure_column = "Procedure",
+#     teeth_column = "ToothVEL",
+#     area_column="AreaofOralCavity",
+#     procedure_filter=man_arch_proc,
+#     quad_category_column="Quad_Category",
+#     group_on_quad=False
+# )
+
+# ## Quad
+# existing_treatments = consolidate_partial_dentures(
+#     existing_treatments,
+#     patient_column="ChartNumber",
+#     procedure_column = "Procedure",
+#     teeth_column = "ToothVEL",
+#     area_column="AreaofOralCavity",
+#     procedure_filter=quad_proc,
+#     quad_category_column="Quad_Category",
+#     group_on_quad=True
+# )
 
 
 ## Calculate Update Instant
@@ -200,36 +234,112 @@ existing_treatments = instant_calc(
 )
 
 ## Partial Denture Inact VEl Mapping
-mask = existing_treatments["ToothVEL"].astype(str).str.contains("\n", na=False)
+## If Patient/Procedure is the same. Look at CompInstant all but most recent CompInstant is moved to Inact VEL
+mask = (
+    existing_treatments["ToothVEL"]
+    .astype(str)
+    .str.contains("\n", na=False)
+)
 
 existing_treatments["Inact VEL"] = np.nan
 
 filtered = existing_treatments.loc[mask].copy()
 
-filtered = filtered.sort_values(
-    ["ChartNumber", "CompInstant"],
-    ascending=[True, False]
+# Ensure proper datetime sorting
+filtered["_CompInstant_dt"] = pd.to_datetime(
+    filtered["CompInstant"],
+    errors="coerce"
 )
 
-older_rows = filtered.groupby("ChartNumber").cumcount() > 0
+filtered = filtered.sort_values(
+    ["ChartNumber", "Procedure", "_CompInstant_dt"],
+    ascending=[True, True, False]
+)
+
+# Older rows within same patient + procedure
+older_rows = (
+    filtered
+    .groupby(["ChartNumber", "Procedure"])
+    .cumcount() > 0
+)
 
 older_idx = filtered.loc[older_rows].index
 
-existing_treatments.loc[older_idx, "Inact VEL"] = existing_treatments.loc[older_idx, "ToothVEL"]
+existing_treatments.loc[
+    older_idx,
+    "Inact VEL"
+] = existing_treatments.loc[
+    older_idx,
+    "ToothVEL"
+]
 
-existing_treatments.loc[older_idx, "ToothVEL"] = np.nan
+existing_treatments.loc[
+    older_idx,
+    "ToothVEL"
+] = np.nan
 
-## Filter out LOS from procedures
+existing_treatments = existing_treatments.drop(
+    columns=["_CompInstant_dt"],
+    errors="ignore"
+)
+# mask = existing_treatments["ToothVEL"].astype(str).str.contains("\n", na=False)
+
+# existing_treatments["Inact VEL"] = np.nan
+
+# filtered = existing_treatments.loc[mask].copy()
+
+# filtered = filtered.sort_values(
+#     ["ChartNumber", "CompInstant"],
+#     ascending=[True, False]
+# )
+
+# older_rows = filtered.groupby("ChartNumber").cumcount() > 0
+
+# older_idx = filtered.loc[older_rows].index
+
+# existing_treatments.loc[older_idx, "Inact VEL"] = existing_treatments.loc[older_idx, "ToothVEL"]
+
+# existing_treatments.loc[older_idx, "ToothVEL"] = np.nan
+
+# Filter out LOS from procedures
 existing_treatments = existing_treatments[~existing_treatments["Procedure"].astype(str).str.contains(r"99\d{3}", na=False)]
 
-## Remove ",,," from DX
+# Remove ",,," from DX
 existing_treatments["AssociatedDiagnosis"] = existing_treatments["AssociatedDiagnosis"].astype(str).str.replace(",,,", "", regex=False)
 
-## Filter out NA Procedures
+# Filter out NA Procedures
 existing_treatments = existing_treatments[existing_treatments["Procedure"].notna()]
 
-## Remove characters from end if Comments exceeds 254 characters
+# Remove characters from end if Comments exceeds 254 characters
 existing_treatments["Comments"] = existing_treatments["Comments"].astype("string").str.slice(0, 254)
+
+
+# If patient has permanent teeth ToothVEL contains numeric, and patient has primary teeth ToothVEL contains alphabetic. 
+## The ToothVEL column should remain the same for permanent, but the primary teeth should be moved to the Inact VEL column.
+anatomy = (
+    existing_treatments["AnatomyVEL"]
+    .astype(str)
+    .str.strip()
+)
+
+is_primary = anatomy.str.fullmatch(r"[A-Za-z]+", na=False)
+is_permanent = anatomy.str.contains(r"\d", na=False)
+
+patients_with_both = (
+    set(existing_treatments.loc[is_primary, "ChartNumber"]) &
+    set(existing_treatments.loc[is_permanent, "ChartNumber"])
+)
+
+mask = (
+    is_primary &
+    existing_treatments["ChartNumber"].isin(patients_with_both)
+)
+
+existing_treatments.loc[mask, "Inact VEL"] = (
+    existing_treatments.loc[mask, "ToothVEL"]
+)
+
+existing_treatments.loc[mask, "ToothVEL"] = np.nan
 
 existing_treatments.to_csv("existing_treatments_unformatted.csv", sep = "|", index=False)
 

@@ -394,6 +394,125 @@ def format_procedure(df, column_name):
 
 
 # Partial Denture Code
+def consolidate_partial_dentures2(
+    df,
+    patient_column="PatientID",
+    procedure_column="Procedure",
+    teeth_column="ToothVEL",
+    procedure_filter=None,
+    quad_category_column="Quad_Category",
+    group_on_quad=False,
+    compinstant_column="CompInstant"
+):
+
+    df = df.copy()
+
+    if procedure_filter is None:
+        procedure_filter = []
+
+    # Split rows into those to consolidate and those to leave alone
+    mask_partial = df[procedure_column].isin(procedure_filter)
+
+    df_partial = df.loc[mask_partial].copy()
+    df_other = df.loc[~mask_partial].copy()
+
+    if df_partial.empty:
+        return df
+
+    has_provider = "Provider" in df_partial.columns
+    has_planowner = "PlanOwner" in df_partial.columns
+
+    def combine_teeth(series):
+        vals = series.astype("string").dropna().str.strip()
+        vals = vals[vals != ""]
+
+        if vals.empty:
+            return pd.NA
+
+        teeth_list = []
+        seen = set()
+
+        for val in vals:
+            for tooth in str(val).split("\n"):
+                tooth = tooth.strip()
+
+                if tooth and tooth not in seen:
+                    seen.add(tooth)
+                    teeth_list.append(tooth)
+
+        return "\n".join(teeth_list) if teeth_list else pd.NA
+
+    def consolidate_group(group):
+
+        preferred = group.copy()
+
+        sort_cols = []
+        ascending = []
+
+        if has_planowner:
+            preferred["_has_planowner"] = (
+                preferred["PlanOwner"]
+                .notna()
+                .astype(int)
+            )
+
+            sort_cols.append("_has_planowner")
+            ascending.append(False)
+
+        if has_provider:
+            preferred["_has_provider"] = (
+                preferred["Provider"]
+                .notna()
+                .astype(int)
+            )
+
+            sort_cols.append("_has_provider")
+            ascending.append(False)
+
+        if sort_cols:
+            preferred = preferred.sort_values(
+                by=sort_cols,
+                ascending=ascending
+            )
+
+        # Base row
+        row = preferred.iloc[0].copy()
+
+        # Consolidate teeth
+        row[teeth_column] = combine_teeth(group[teeth_column])
+
+        return row
+
+    # Grouping columns
+    group_cols = [
+        patient_column,
+        procedure_column,
+        compinstant_column
+    ]
+
+    if group_on_quad:
+        group_cols.append(quad_category_column)
+
+    # Consolidate
+    df_consolidated = (
+        df_partial
+        .groupby(group_cols, dropna=False, group_keys=False)
+        .apply(consolidate_group)
+        .reset_index(drop=True)
+        .drop(
+            columns=["_has_planowner", "_has_provider"],
+            errors="ignore"
+        )
+    )
+
+    # Recombine with untouched rows
+    result = pd.concat(
+        [df_other, df_consolidated],
+        ignore_index=True
+    )
+
+    return result
+
 def consolidate_partial_dentures(
     df,
     patient_column="PatientID",
@@ -517,6 +636,57 @@ def map_dentition_tooth_status(df, finding_type_dentition_map):
 
 
 # Perio Location Mapping
-def map_perio_loc(df, perio_map):
-    df["Dental:Perio Location"] = df["DentalLocation"].map(perio_map)
+def map_perio_loc(df, perio_map, quadrants=None):
+    df = df.copy()
+
+    if quadrants is None:
+        quadrants = []
+
+    # Only apply mapping to specified quadrants
+    mask = df["Quad_Category"].isin(quadrants)
+
+    df.loc[mask, "Dental:Perio Location"] = (
+        df.loc[mask, "DentalLocation"]
+        .map(perio_map)
+    )
+
     return df
+
+# Perio Consolidation
+##TODO group by patient per tooth
+
+def consolidate_periodontal_rows(df):
+    df = df.copy()
+
+    group_cols = ["Patient ID", "Tooth VEL"]
+
+    consolidate_cols = [
+        "Dental:Probing Depth",
+        "Dental:Perio Location"
+    ]
+
+    # Build aggregation dictionary
+    agg_dict = {}
+
+    for col in df.columns:
+        if col in consolidate_cols:
+
+            agg_dict[col] = lambda x: "\n".join(
+                x.dropna()
+                 .astype(str)
+                 .map(str.strip)
+                 .replace("", pd.NA)
+                 .dropna()
+            )
+
+        else:
+            agg_dict[col] = "first"
+
+    consolidated = (
+        df.groupby(group_cols, dropna=False, as_index=False)
+          .agg(agg_dict)
+    )
+
+    return consolidated
+#TODO is it fine to preserve duplicates in consolidated rows
+#TODO more than 6 perio locations. do I need a blank line for the probing depth? Basically are probing depth value and location associated?

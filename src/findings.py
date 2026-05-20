@@ -28,8 +28,8 @@ findings = pd.read_csv("working_data/findings.csv", delimiter="|")
 
 # Initial Filtering
 findings = findings[
-    findings["ChartNumber"].notna()
-    & ~findings["ChartNumber"].astype(str).str.strip().str.contains("_", na=False)
+    findings["ChartNumber"].notna() &
+    ~findings["ChartNumber"].astype(str).str.strip().str.contains("_", na=False)
     & (findings["UpdateUser"] != "TEST")
 ]
 

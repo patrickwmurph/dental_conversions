@@ -1,11 +1,26 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime
-from func.func import set_resid, format_pid, map_teeth, map_provider, map_perio_loc, instant_calc
-from func.tables import teeth_map, provider_emp_map, provider_ser_map, perio_map
+from func.func import (
+    set_resid, 
+    format_pid, 
+    map_teeth, 
+    map_provider, 
+    map_perio_loc, 
+    instant_calc, 
+    quad_category_column
+)
+
+from func.tables import (
+    teeth_map, 
+    provider_emp_map, 
+    provider_ser_map, 
+    right_perio_map,
+    left_perio_map
+)
 
 # Load df
-periodontal = pd.read_csv("data\DXE_Extract_PerioCharting.csv", delimiter="|")
+periodontal = pd.read_csv("data\DXE_Extract_PerioCharting.csv", delimiter="|", dtype={"PatientID": "string"})
 
 # Initial Filtering
 periodontal = periodontal[
@@ -14,7 +29,6 @@ periodontal = periodontal[
     & (periodontal["UpdateUser"] != "TEST")
     & (periodontal["EncProvider"] != "TEST")
 ]
-
 
 # RESID Populating
 periodontal = set_resid(
@@ -52,7 +66,18 @@ periodontal = map_provider(
 )
 
 # Perio Location Mapping
-periodontal = map_perio_loc(periodontal, perio_map)
+# periodontal = map_perio_loc(periodontal, perio_map)
+
+# Add Quad Category to Perio
+periodontal = quad_category_column(
+    periodontal, 
+    "AnatomyVEL",
+    target_column="Quad_Category" 
+)
+
+# Map perio location based on quadrant
+periodontal = map_perio_loc(periodontal, right_perio_map, quadrants=["UR","LR"] )
+periodontal = map_perio_loc(periodontal, left_perio_map, quadrants=["UL","LL"])
 
 # Update Instant
 periodontal = instant_calc(
@@ -62,19 +87,19 @@ periodontal = instant_calc(
 )
 
 # Set DentalGingivalMargin and DentalClinicalAttachmentLevel 0s to null
-periodontal["DentalGingivalMargin"] = periodontal["DentalGingivalMargin"].astype(str)
-periodontal["DentalClinicalAttachmentLevel"] = periodontal["DentalClinicalAttachmentLevel"].astype(str)
 periodontal["DentalProbingDepth"] = periodontal["DentalProbingDepth"].astype(str)
+# periodontal["DentalGingivalMargin"] = periodontal["DentalGingivalMargin"].astype(str)
+# periodontal["DentalClinicalAttachmentLevel"] = periodontal["DentalClinicalAttachmentLevel"].astype(str)
 
-periodontal.loc[
-    periodontal["DentalGingivalMargin"] == "0",
-    "DentalGingivalMargin"
-] = pd.NA
+# periodontal.loc[
+#     periodontal["DentalGingivalMargin"] == "0",
+#     "DentalGingivalMargin"
+# ] = pd.NA
 
-periodontal.loc[
-    periodontal["DentalClinicalAttachmentLevel"] == "0",
-    "DentalClinicalAttachmentLevel"
-] = pd.NA
+# periodontal.loc[
+#     periodontal["DentalClinicalAttachmentLevel"] == "0",
+#     "DentalClinicalAttachmentLevel"
+# ] = pd.NA
 
 periodontal.loc[
     periodontal["DentalProbingDepth"] == "0",
@@ -90,9 +115,9 @@ reformatted_periodontal = periodontal.assign(
         "Tooth VEL": periodontal["ToothVEL"],
         "Perio CSN Identifier": "G^1",
         "Dental:Probing Depth": periodontal["DentalProbingDepth"],
-        "Dental:Gingival Margin": periodontal["DentalGingivalMargin"],
+        "Dental:Gingival Margin": "",
         "Dental:Perio Location": periodontal["Dental:Perio Location"],
-        "Dental:Clinical Attachment Level": periodontal["DentalClinicalAttachmentLevel"],
+        "Dental:Clinical Attachment Level": "",
         "Update User": periodontal["Update User"],
         "Update Inst (UTC)": periodontal["Update Inst (UTC)"],
         "Enc Dep": "490",
