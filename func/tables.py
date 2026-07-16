@@ -1,3 +1,36 @@
+import pandas as pd
+
+pid_df_final = pd.read_csv("working_data/chart_number_final_0607.csv", header=None)
+
+pid_df_final = pid_df_final[~pid_df_final[1].astype(str).str.contains(r"[A-Za-z]")]
+
+pid_to_chartnumber_final = dict(
+    zip(
+        pid_df_final[0].astype(str).str.strip(),
+        pid_df_final[1].astype(str).str.strip()
+    )
+)
+
+pid_to_chartnumber = {
+    "1014165":"10035051",
+    "1016148":"10057718",
+    "1018266":"10146465",
+    "1020882":"10039066",
+    "1033283":"10648816",
+    "1037129":"10213648",
+    "1062635":"16277390",
+    "1078298":"10405651",
+    "1078886":"10435601"
+}
+
+chart_number_df = pd.read_csv("working_data/soarian_chart_number.csv", header=None)
+chartnumber_to_soarian = dict(
+    zip(
+        chart_number_df[0].astype(str),
+        chart_number_df[1].astype(str)
+    )
+)
+
 procedure_map = {
     "PUD1": "WIS35",
     "PUD2": "WIS36",

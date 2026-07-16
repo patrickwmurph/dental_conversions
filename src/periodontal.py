@@ -8,7 +8,9 @@ from func.func import (
     map_provider, 
     map_perio_loc, 
     instant_calc, 
-    quad_category_column
+    quad_category_column,
+    consolidate_periodontal_rows,
+    map_chart_number
 )
 
 from func.tables import (
@@ -16,16 +18,38 @@ from func.tables import (
     provider_emp_map, 
     provider_ser_map, 
     right_perio_map,
-    left_perio_map
+    left_perio_map,
+    pid_to_chartnumber,
+    chartnumber_to_soarian,
+    pid_to_chartnumber_final
 )
 
 # Load df
 periodontal = pd.read_csv("data\DXE_Extract_PerioCharting.csv", delimiter="|", dtype={"PatientID": "string"})
 
+# Map Chart Number and create chartnumber column
+periodontal["ChartNumber"] = periodontal["PatientID"].astype(str)
+periodontal[periodontal["ChartNumber"].astype(str).isin(IDs)].value_counts("ChartNumber")
+
+## Map ChartNumber based on PatientID
+periodontal = map_chart_number(
+    periodontal,
+    pid_to_chartnumber_final,
+    patient_id_col="PatientID",
+    chart_number_col="ChartNumber"
+)
+
+periodontal = map_chart_number(
+    periodontal,
+    chartnumber_to_soarian,
+    patient_id_col="ChartNumber",
+    chart_number_col="ChartNumber"
+)
+
 # Initial Filtering
 periodontal = periodontal[
-    periodontal["PatientID"].notna()
-    & ~periodontal["PatientID"].astype(str).str.strip().str.contains("_", na=False)
+    # periodontal["ChartNumber"].notna() &
+    ~periodontal["ChartNumber"].astype(str).str.strip().str.contains("_", na=False)
     & (periodontal["UpdateUser"] != "TEST")
     & (periodontal["EncProvider"] != "TEST")
 ]
@@ -33,11 +57,11 @@ periodontal = periodontal[
 # RESID Populating
 periodontal = set_resid(
     periodontal,
-    "PatientID"
+    "ChartNumber"
 )
 
 # Patient ID renaming
-periodontal = format_pid(periodontal, "PatientID")
+periodontal = format_pid(periodontal, "ChartNumber")
 
 # Teeth Mapping
 periodontal = map_teeth(
@@ -88,6 +112,8 @@ periodontal = instant_calc(
 
 # Set DentalGingivalMargin and DentalClinicalAttachmentLevel 0s to null
 periodontal["DentalProbingDepth"] = periodontal["DentalProbingDepth"].astype(str)
+#TODO If probing depth is 0 then remove the row
+
 # periodontal["DentalGingivalMargin"] = periodontal["DentalGingivalMargin"].astype(str)
 # periodontal["DentalClinicalAttachmentLevel"] = periodontal["DentalClinicalAttachmentLevel"].astype(str)
 
@@ -106,12 +132,16 @@ periodontal.loc[
     "DentalProbingDepth"
 ] = pd.NA
 
+periodontal[periodontal["ChartNumber"] == "10014531"]
+
+periodontal = periodontal[periodontal["DentalProbingDepth"].notna()]
+
 periodontal.to_csv("periodontal_unformatted.csv", sep="|", index=False)
 
 reformatted_periodontal = periodontal.assign(
     **{
         "ID": periodontal["RESID"],
-        "Patient ID": periodontal["PatientID"],
+        "Patient ID": periodontal["ChartNumber"],
         "Tooth VEL": periodontal["ToothVEL"],
         "Perio CSN Identifier": "G^1",
         "Dental:Probing Depth": periodontal["DentalProbingDepth"],
@@ -144,10 +174,27 @@ reformatted_periodontal = reformatted_periodontal[
     ]
 ]
 
-# reformatted_periodontal.to_csv("periodontal_formatted.csv", sep = "|", index=False)
+reformatted_periodontal = consolidate_periodontal_rows(
+    reformatted_periodontal
+)
 
-periodontal_dfs = np.array_split(reformatted_periodontal, 3)
+reformatted_periodontal[
+    reformatted_periodontal["Dental:Probing Depth"]
+        .astype(str)
+        .str.count("\n")
+    !=
+    reformatted_periodontal["Dental:Perio Location"]
+        .astype(str)
+        .str.count("\n")
+]
 
-# Export each chunk
-for i, df_chunk in enumerate(periodontal_dfs, start=1):
-    df_chunk.to_csv(f"periodontal_formatted_part{i}.csv", sep="|", index=False)
+
+reformatted_periodontal[reformatted_periodontal["Patient ID"].isin(IDs)]
+
+
+reformatted_periodontal.to_csv("periodontal_formatted.csv", sep = "|", index=False)
+# periodontal_dfs = np.array_split(reformatted_periodontal, 3)
+
+# # Export each chunk
+# for i, df_chunk in enumerate(periodontal_dfs, start=1):
+#     df_chunk.to_csv(f"periodontal_formatted_part{i}.csv", sep="|", index=False)

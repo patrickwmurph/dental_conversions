@@ -19,16 +19,38 @@ from func.tables import (
     provider_emp_map, 
     finding_type_map, 
     finding_comment_map, 
-    finding_type_dentition_map
+    finding_type_dentition_map,
+    pid_to_chartnumber,
+    chartnumber_to_soarian,
+    pid_to_chartnumber_final
 )
 
 # xml_clean("data\DXE_Extract_Findings.csv","working_data/findings.csv")
 
 findings = pd.read_csv("working_data/findings.csv", delimiter="|")
 
+findings[findings["ChartNumber"].astype(str).isin(IDs)].value_counts("ChartNumber")
+
+
+# Map Chart Number
+## Map ChartNumber baed on PatientID
+findings = map_chart_number(
+    findings,
+    pid_to_chartnumber_final,
+    patient_id_col="PatientID",
+    chart_number_col="ChartNumber"
+)
+## Map ChartNumber to Soarian Chart Number
+# findings = map_chart_number(
+#     findings,
+#     chartnumber_to_soarian,
+#     patient_id_col="ChartNumber",
+#     chart_number_col="ChartNumber"
+# )
+
 # Initial Filtering
 findings = findings[
-    findings["ChartNumber"].notna() &
+    # findings["ChartNumber"].notna() &
     ~findings["ChartNumber"].astype(str).str.strip().str.contains("_", na=False)
     & (findings["UpdateUser"] != "TEST")
 ]

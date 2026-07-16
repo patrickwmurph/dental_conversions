@@ -23,6 +23,10 @@ from func.tables import (
     arch_map,
     quad_map,
     whole_mouth_codes,
+    
+    pid_to_chartnumber,
+    chartnumber_to_soarian,
+    pid_to_chartnumber_final
 )
 
 
@@ -41,7 +45,8 @@ from func.func import (
     quad_category_column, 
     instant_calc, 
     filter_full_mouth_codes,
-    pip_count_cleaning
+    pip_count_cleaning,
+    map_chart_number
 )
 
 # pip_count_cleaning("data\DXE_Extract_ExistingTreatment.csv", "working_data/existing_treatments.csv")
@@ -52,10 +57,30 @@ from func.func import (
 existing_treatments = pd.read_csv("working_data/existing_treatments.csv", delimiter="|")
 existing_treatments = existing_treatments.shift(axis=1).reset_index()
 
+existing_treatments[existing_treatments["ChartNumber"].astype(str).isin(IDs)].value_counts("ChartNumber")
+
+# Map Chart Number
+## Map ChartNumber baed on PatientID
+existing_treatments = map_chart_number(
+    existing_treatments,
+    pid_to_chartnumber_final,
+    patient_id_col="PatientID",
+    chart_number_col="ChartNumber"
+)
+
+## Map ChartNumber to Soarian Chart Number
+# existing_treatments = map_chart_number(
+#     existing_treatments,
+#     chartnumber_to_soarian,
+#     patient_id_col="ChartNumber",
+#     chart_number_col="ChartNumber"
+# )
+
+
 # Initial Filtering
 existing_treatments = existing_treatments[
-    existing_treatments["ChartNumber"].notna()
-    & ~existing_treatments["ChartNumber"].astype(str).str.strip().str.contains("_", na=False)
+    # existing_treatments["ChartNumber"].notna() &
+    ~existing_treatments["ChartNumber"].astype(str).str.strip().str.contains("_", na=False)
     & (existing_treatments["Provider"] != "TEST")
     & (existing_treatments["UpdateUser"] != "TEST")
 ]
@@ -312,7 +337,6 @@ existing_treatments = existing_treatments[existing_treatments["Procedure"].notna
 
 # Remove characters from end if Comments exceeds 254 characters
 existing_treatments["Comments"] = existing_treatments["Comments"].astype("string").str.slice(0, 254)
-
 
 # If patient has permanent teeth ToothVEL contains numeric, and patient has primary teeth ToothVEL contains alphabetic. 
 ## The ToothVEL column should remain the same for permanent, but the primary teeth should be moved to the Inact VEL column.

@@ -108,7 +108,35 @@ def xml_clean(data, working_data):
         f.write(text)
 
     print(f"{working_data} written.")
-    
+   
+   
+def map_chart_number(
+    df,
+    chart_number_map,
+    patient_id_col="PatientID",
+    chart_number_col="ChartNumber"
+):
+    df = df.copy()
+
+    df[patient_id_col] = df[patient_id_col].astype(str)
+    df[chart_number_col] = df[chart_number_col].astype(str)
+
+    # Normalize mapping keys to strings
+    patient_map = {
+        str(k): v
+        for k, v in chart_number_map.items()
+    }
+
+    mask = df[patient_id_col].astype(str).isin(patient_map)
+
+    df.loc[mask, chart_number_col] = (
+        df.loc[mask, patient_id_col]
+          .astype(str)
+          .map(patient_map)
+    )
+
+    return df
+ 
 # def xml_clean(data, working_data):
     
 #     with open(data, "r", encoding="utf-8", newline="") as f:
@@ -688,5 +716,4 @@ def consolidate_periodontal_rows(df):
     )
 
     return consolidated
-#TODO is it fine to preserve duplicates in consolidated rows
 #TODO more than 6 perio locations. do I need a blank line for the probing depth? Basically are probing depth value and location associated?
